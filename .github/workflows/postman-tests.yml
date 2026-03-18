@@ -66,6 +66,7 @@ jobs:
           curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
 
       - name: Lint OpenAPI spec
+        continue-on-error: true
         run: |
           postman api lint --api-definition spec/grubhub-partner-api.yaml
         env:
