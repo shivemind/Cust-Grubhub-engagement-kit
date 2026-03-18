@@ -43,7 +43,7 @@ jobs:
           curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
 
       - name: Run Postman collection tests
-        if: env.POSTMAN_API_KEY != ''
+        if: ${{ vars.POSTMAN_COLLECTION_ID != '' && vars.POSTMAN_ENVIRONMENT_ID != '' }}
         run: |
           postman collection run "$COLLECTION_ID" \
             --environment "$ENVIRONMENT_ID" \
@@ -66,7 +66,7 @@ jobs:
           curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
 
       - name: Lint OpenAPI spec
-        if: env.POSTMAN_API_KEY != ''
+        if: ${{ secrets.POSTMAN_API_KEY != '' }}
         run: |
           postman api lint --api-definition spec/grubhub-partner-api.yaml
         env:
@@ -81,7 +81,7 @@ jobs:
     name: Onboard Spec to Postman
     runs-on: ubuntu-latest
     needs: [api-tests, governance]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: ${{ always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
 
     steps:
       - name: Checkout code
