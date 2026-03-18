@@ -76,3 +76,31 @@ jobs:
         run: |
           npx @apidevtools/swagger-cli validate spec/grubhub-partner-api.yaml
           echo "OpenAPI spec is valid"
+
+  onboard-to-postman:
+    name: Onboard Spec to Postman
+    runs-on: ubuntu-latest
+    needs: [api-tests, governance]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Convert spec to JSON
+        run: node -e "const y=require('js-yaml');const f=require('fs');f.writeFileSync('spec/grubhub-partner-api.json',JSON.stringify(y.load(f.readFileSync('spec/grubhub-partner-api.yaml','utf8')),null,2))"
+
+      - name: Push spec to Spec Hub and derive assets
+        run: node scripts/onboard-to-postman.js
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          POSTMAN_WORKSPACE_ID: ${{ vars.POSTMAN_WORKSPACE_ID }}
