@@ -158,24 +158,35 @@ function injectTests(spec, items) {
   return count;
 }
 
+const SPEC_NAME = 'GrubHub Partner Restaurant API';
+const COLLECTION_NAME = 'GrubHub Partner Restaurant API';
+const ENV_NAME = 'GrubHub Local Dev';
+const MONITOR_NAME = 'GrubHub API Health Monitor';
+
+async function findExisting(type, nameField) {
+  const resp = await api('GET', `/${type}?workspace=${WORKSPACE_ID}`);
+  const items = resp.body[type] || [];
+  return items.find(i => i.name === nameField) || null;
+}
+
 async function main() {
   const specContent = fs.readFileSync('spec/grubhub-partner-api.yaml', 'utf8');
   const spec = yaml.load(specContent);
   const specJson = JSON.parse(fs.readFileSync('spec/grubhub-partner-api.json', 'utf8'));
 
-  // Step 1: Push spec to Spec Hub
+  // Step 1: Spec Hub — create or update
   console.log('\n1. Pushing spec to Spec Hub...');
   const existingSpecs = await api('GET', `/specs?workspaceId=${WORKSPACE_ID}`);
   let specId;
-  const existing = (existingSpecs.body.specs || []).find(s => s.name === 'GrubHub Partner Restaurant API');
-  if (existing) {
-    specId = existing.id;
-    console.log(`   Spec already exists (${specId}), updating...`);
+  const existingSpec = (existingSpecs.body.specs || []).find(s => s.name === SPEC_NAME);
+  if (existingSpec) {
+    specId = existingSpec.id;
+    console.log(`   Spec exists (${specId}), updating...`);
     const upd = await api('PUT', `/specs/${specId}`, { files: [{ path: 'grubhub-partner-api.yaml', content: specContent }] });
     console.log(`   Update status: ${upd.status}`);
   } else {
     const create = await api('POST', `/specs?workspaceId=${WORKSPACE_ID}`, {
-      name: 'GrubHub Partner Restaurant API',
+      name: SPEC_NAME,
       type: 'OPENAPI:3.0',
       files: [{ path: 'grubhub-partner-api.yaml', content: specContent }]
     });
@@ -183,22 +194,28 @@ async function main() {
     console.log(`   Created spec: ${specId} (status: ${create.status})`);
   }
 
-  // Step 2: Generate collection from spec via OpenAPI import
-  console.log('\n2. Generating collection from spec...');
-  const importResp = await api('POST', `/import/openapi?workspace=${WORKSPACE_ID}`, {
-    type: 'json',
-    input: specJson,
-    options: { folderStrategy: 'Tags', requestParameterGeneration: 'Example' }
-  });
-  if (importResp.status !== 200 || !importResp.body.collections?.length) {
-    console.error('   Import failed:', importResp.status, JSON.stringify(importResp.body));
-    process.exit(1);
+  // Step 2: Collection — find existing or import new
+  console.log('\n2. Resolving collection...');
+  const existingCol = await findExisting('collections', COLLECTION_NAME);
+  let collectionUid;
+  if (existingCol) {
+    collectionUid = existingCol.uid;
+    console.log(`   Collection exists: ${collectionUid}, will update tests in place`);
+  } else {
+    const importResp = await api('POST', `/import/openapi?workspace=${WORKSPACE_ID}`, {
+      type: 'json',
+      input: specJson,
+      options: { folderStrategy: 'Tags', requestParameterGeneration: 'Example' }
+    });
+    if (importResp.status !== 200 || !importResp.body.collections?.length) {
+      console.error('   Import failed:', importResp.status, JSON.stringify(importResp.body));
+      process.exit(1);
+    }
+    collectionUid = importResp.body.collections[0].uid;
+    console.log(`   Collection created: ${collectionUid}`);
   }
-  const collectionId = importResp.body.collections[0].id;
-  const collectionUid = importResp.body.collections[0].uid;
-  console.log(`   Collection created: ${collectionUid}`);
 
-  // Step 3: Inject test scripts into collection
+  // Step 3: Inject/refresh test scripts
   console.log('\n3. Injecting spec-derived test scripts...');
   const colResp = await api('GET', `/collections/${collectionUid}`);
   const collection = colResp.body.collection;
@@ -208,40 +225,76 @@ async function main() {
   const putResp = await api('PUT', `/collections/${collectionUid}`, { collection });
   console.log(`   Collection updated: ${putResp.status}`);
 
-  // Step 4: Create environment
-  console.log('\n4. Creating environment...');
-  const envResp = await api('POST', `/environments?workspace=${WORKSPACE_ID}`, {
-    environment: {
-      name: 'GrubHub Local Dev',
-      values: [
-        { key: 'baseUrl', value: 'http://localhost:3000/api/v1', type: 'default', enabled: true },
-        { key: 'apiKey', value: 'grubhub-demo-key-2026', type: 'secret', enabled: true },
-        { key: 'restaurantId', value: 'rest-001', type: 'default', enabled: true },
-        { key: 'orderId', value: 'order-001', type: 'default', enabled: true }
-      ]
-    }
-  });
-  const envUid = envResp.body.environment.uid;
-  console.log(`   Environment created: ${envUid}`);
+  // Step 4: Environment — find existing or create
+  console.log('\n4. Resolving environment...');
+  const existingEnv = await findExisting('environments', ENV_NAME);
+  let envUid;
+  if (existingEnv) {
+    envUid = existingEnv.uid;
+    console.log(`   Environment exists: ${envUid}, updating values...`);
+    await api('PUT', `/environments/${envUid}`, {
+      environment: {
+        name: ENV_NAME,
+        values: [
+          { key: 'baseUrl', value: 'http://localhost:3000/api/v1', type: 'default', enabled: true },
+          { key: 'apiKey', value: 'grubhub-demo-key-2026', type: 'secret', enabled: true },
+          { key: 'restaurantId', value: 'rest-001', type: 'default', enabled: true },
+          { key: 'orderId', value: 'order-001', type: 'default', enabled: true }
+        ]
+      }
+    });
+    console.log(`   Environment updated`);
+  } else {
+    const envResp = await api('POST', `/environments?workspace=${WORKSPACE_ID}`, {
+      environment: {
+        name: ENV_NAME,
+        values: [
+          { key: 'baseUrl', value: 'http://localhost:3000/api/v1', type: 'default', enabled: true },
+          { key: 'apiKey', value: 'grubhub-demo-key-2026', type: 'secret', enabled: true },
+          { key: 'restaurantId', value: 'rest-001', type: 'default', enabled: true },
+          { key: 'orderId', value: 'order-001', type: 'default', enabled: true }
+        ]
+      }
+    });
+    envUid = envResp.body.environment.uid;
+    console.log(`   Environment created: ${envUid}`);
+  }
 
-  // Step 5: Create monitor
-  console.log('\n5. Creating monitor...');
-  const monResp = await api('POST', `/monitors?workspace=${WORKSPACE_ID}`, {
-    monitor: {
-      name: 'GrubHub API Health Monitor',
-      collection: collectionUid,
-      environment: envUid,
-      schedule: { cron: '0 0 * * *', timezone: 'America/Chicago' }
-    }
-  });
-  console.log(`   Monitor created: ${monResp.body.monitor?.uid} (status: ${monResp.status})`);
+  // Step 5: Monitor — find existing or create
+  console.log('\n5. Resolving monitor...');
+  const existingMon = await findExisting('monitors', MONITOR_NAME);
+  let monUid;
+  if (existingMon) {
+    monUid = existingMon.uid;
+    console.log(`   Monitor exists: ${monUid}, updating...`);
+    await api('PUT', `/monitors/${monUid}`, {
+      monitor: {
+        name: MONITOR_NAME,
+        collection: collectionUid,
+        environment: envUid,
+        schedule: { cron: '0 0 * * *', timezone: 'America/Chicago' }
+      }
+    });
+    console.log(`   Monitor updated`);
+  } else {
+    const monResp = await api('POST', `/monitors?workspace=${WORKSPACE_ID}`, {
+      monitor: {
+        name: MONITOR_NAME,
+        collection: collectionUid,
+        environment: envUid,
+        schedule: { cron: '0 0 * * *', timezone: 'America/Chicago' }
+      }
+    });
+    monUid = monResp.body.monitor?.uid;
+    console.log(`   Monitor created: ${monUid} (status: ${monResp.status})`);
+  }
 
   // Summary
   console.log('\n=== ONBOARDING COMPLETE ===');
   console.log(`Spec Hub:     ${specId}`);
   console.log(`Collection:   ${collectionUid} (${testCount} tests)`);
   console.log(`Environment:  ${envUid}`);
-  console.log(`Monitor:      ${monResp.body.monitor?.uid}`);
+  console.log(`Monitor:      ${monUid}`);
   console.log(`Workspace:    ${WORKSPACE_ID}`);
 }
 
