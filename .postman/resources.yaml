@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: 549c9382-ffb6-4f79-b7b7-2354db906862
+
+localResources:
+  specs:
+    - ../spec/grubhub-partner-api.yaml

@@ -1,0 +1,1324 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GrubHub Partner Restaurant API",
+    "description": "REST API for managing partner restaurants, menus, orders, and delivery\ntracking on the GrubHub platform. Built to demonstrate Postman v12\nEnterprise capabilities.\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "GrubHub API Platform Team",
+      "email": "api-platform@grubhub.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "Local development server"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Restaurants",
+      "description": "Partner restaurant management"
+    },
+    {
+      "name": "Menus",
+      "description": "Restaurant menu and item management"
+    },
+    {
+      "name": "Orders",
+      "description": "Order lifecycle management"
+    },
+    {
+      "name": "Delivery",
+      "description": "Delivery tracking and driver assignment"
+    },
+    {
+      "name": "Health",
+      "description": "Service health monitoring"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Service health check",
+        "operationId": "getHealth",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "healthy",
+                  "service": "GrubHub Partner API",
+                  "version": "1.0.0",
+                  "uptime": 3600.5,
+                  "timestamp": "2026-03-17T12:00:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/restaurants": {
+      "get": {
+        "tags": [
+          "Restaurants"
+        ],
+        "summary": "List partner restaurants",
+        "operationId": "listRestaurants",
+        "parameters": [
+          {
+            "name": "cuisine",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by cuisine type",
+            "example": "Pizza"
+          },
+          {
+            "name": "isOpen",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Filter by open/closed status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of restaurants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestaurantListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Restaurants"
+        ],
+        "summary": "Register a new partner restaurant",
+        "operationId": "createRestaurant",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRestaurantRequest"
+              },
+              "example": {
+                "name": "Giordano's",
+                "cuisine": "Pizza",
+                "address": "730 N Rush St, Chicago, IL 60611",
+                "estimatedDeliveryMin": 25,
+                "estimatedDeliveryMax": 40
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Restaurant created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Restaurant"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/restaurants/{id}": {
+      "get": {
+        "tags": [
+          "Restaurants"
+        ],
+        "summary": "Get restaurant details",
+        "operationId": "getRestaurant",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RestaurantId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restaurant details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Restaurant"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Restaurants"
+        ],
+        "summary": "Update restaurant information",
+        "operationId": "updateRestaurant",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RestaurantId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRestaurantRequest"
+              },
+              "example": {
+                "isOpen": false,
+                "rating": 4.9
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restaurant updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Restaurant"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Restaurants"
+        ],
+        "summary": "Remove a partner restaurant",
+        "operationId": "deleteRestaurant",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RestaurantId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restaurant removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/restaurants/{restaurantId}/menu": {
+      "get": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Get restaurant menu",
+        "operationId": "getMenu",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RestaurantIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full restaurant menu grouped by category",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/restaurants/{restaurantId}/menu/items": {
+      "post": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Add a menu item",
+        "operationId": "createMenuItem",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RestaurantIdPath"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMenuItemRequest"
+              },
+              "example": {
+                "name": "Garlic Bread",
+                "description": "Toasted bread with garlic butter and herbs",
+                "price": 6.99,
+                "category": "Sides"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Menu item created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/menu/items/{itemId}": {
+      "put": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Update a menu item",
+        "operationId": "updateMenuItem",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Menu item ID",
+            "example": "item-001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMenuItemRequest"
+              },
+              "example": {
+                "price": 19.99,
+                "available": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Menu item updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuItem"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Menus"
+        ],
+        "summary": "Remove a menu item",
+        "operationId": "deleteMenuItem",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Menu item ID",
+            "example": "item-001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Menu item removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "List orders",
+        "operationId": "listOrders",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "placed",
+                "confirmed",
+                "preparing",
+                "ready",
+                "in_transit",
+                "delivered",
+                "cancelled"
+              ]
+            },
+            "description": "Filter by order status"
+          },
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by restaurant ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Place a new order",
+        "operationId": "createOrder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              },
+              "example": {
+                "restaurantId": "rest-001",
+                "customerName": "Alex Thompson",
+                "items": [
+                  {
+                    "menuItemId": "item-001",
+                    "quantity": 1
+                  },
+                  {
+                    "menuItemId": "item-003",
+                    "quantity": 2
+                  }
+                ],
+                "deliveryAddress": "200 E Randolph St, Chicago, IL 60601"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order placed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Get order details",
+        "operationId": "getOrder",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID",
+            "example": "order-001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/orders/{id}/status": {
+      "put": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Update order status",
+        "operationId": "updateOrderStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID",
+            "example": "order-001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrderStatusRequest"
+              },
+              "example": {
+                "status": "preparing"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/deliveries/{orderId}/tracking": {
+      "get": {
+        "tags": [
+          "Delivery"
+        ],
+        "summary": "Track a delivery",
+        "operationId": "trackDelivery",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID to track",
+            "example": "order-002"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery tracking information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryTracking"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/deliveries/{orderId}/assign": {
+      "put": {
+        "tags": [
+          "Delivery"
+        ],
+        "summary": "Assign a driver to an order",
+        "operationId": "assignDriver",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID",
+            "example": "order-003"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignDriverRequest"
+              },
+              "example": {
+                "driverName": "Marcus Rivera",
+                "driverPhone": "+1-312-555-0188"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Driver assigned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryTracking"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Driver already assigned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/deliveries/active": {
+      "get": {
+        "tags": [
+          "Delivery"
+        ],
+        "summary": "List active deliveries",
+        "operationId": "listActiveDeliveries",
+        "responses": {
+          "200": {
+            "description": "Active deliveries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveDeliveriesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for authenticating requests"
+      }
+    },
+    "parameters": {
+      "RestaurantId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Restaurant ID",
+        "example": "rest-001"
+      },
+      "RestaurantIdPath": {
+        "name": "restaurantId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Restaurant ID",
+        "example": "rest-001"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing API key",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Invalid API key",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "service": {
+            "type": "string",
+            "example": "GrubHub Partner API"
+          },
+          "version": {
+            "type": "string",
+            "example": "1.0.0"
+          },
+          "uptime": {
+            "type": "number",
+            "format": "float",
+            "example": 3600.5
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Restaurant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "rest-001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Lou Malnati's Pizzeria"
+          },
+          "cuisine": {
+            "type": "string",
+            "example": "Pizza"
+          },
+          "address": {
+            "type": "string",
+            "example": "439 N Wells St, Chicago, IL 60654"
+          },
+          "rating": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "maximum": 5,
+            "example": 4.7
+          },
+          "isOpen": {
+            "type": "boolean",
+            "example": true
+          },
+          "estimatedDeliveryMin": {
+            "type": "integer",
+            "example": 30
+          },
+          "estimatedDeliveryMax": {
+            "type": "integer",
+            "example": 45
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateRestaurantRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "cuisine",
+          "address"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Giordano's"
+          },
+          "cuisine": {
+            "type": "string",
+            "example": "Pizza"
+          },
+          "address": {
+            "type": "string",
+            "example": "730 N Rush St, Chicago, IL 60611"
+          },
+          "estimatedDeliveryMin": {
+            "type": "integer",
+            "example": 25
+          },
+          "estimatedDeliveryMax": {
+            "type": "integer",
+            "example": 40
+          }
+        }
+      },
+      "UpdateRestaurantRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "cuisine": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "format": "float"
+          },
+          "isOpen": {
+            "type": "boolean"
+          },
+          "estimatedDeliveryMin": {
+            "type": "integer"
+          },
+          "estimatedDeliveryMax": {
+            "type": "integer"
+          }
+        }
+      },
+      "RestaurantListResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "example": 5
+          },
+          "restaurants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Restaurant"
+            }
+          }
+        }
+      },
+      "MenuItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "item-001"
+          },
+          "restaurantId": {
+            "type": "string",
+            "example": "rest-001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Classic Deep Dish Pizza"
+          },
+          "description": {
+            "type": "string",
+            "example": "Buttercrust deep dish with sausage, mozzarella, and chunky tomato sauce"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "example": 18.99
+          },
+          "category": {
+            "type": "string",
+            "example": "Entrees"
+          },
+          "available": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "CreateMenuItemRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "price",
+          "category"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "format": "float"
+          },
+          "category": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateMenuItemRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "format": "float"
+          },
+          "category": {
+            "type": "string"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MenuResponse": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "restaurantName": {
+            "type": "string"
+          },
+          "itemCount": {
+            "type": "integer"
+          },
+          "categories": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/MenuItem"
+              }
+            }
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "properties": {
+          "menuItemId": {
+            "type": "string",
+            "example": "item-001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Classic Deep Dish Pizza"
+          },
+          "quantity": {
+            "type": "integer",
+            "example": 1
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "example": 18.99
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "order-001"
+          },
+          "restaurantId": {
+            "type": "string",
+            "example": "rest-001"
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Sarah Johnson"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "placed",
+              "confirmed",
+              "preparing",
+              "ready",
+              "in_transit",
+              "delivered",
+              "cancelled"
+            ],
+            "example": "preparing"
+          },
+          "total": {
+            "type": "number",
+            "format": "float",
+            "example": 36.97
+          },
+          "deliveryAddress": {
+            "type": "string",
+            "example": "233 S Wacker Dr, Chicago, IL 60606"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": [
+          "restaurantId",
+          "customerName",
+          "items",
+          "deliveryAddress"
+        ],
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "menuItemId"
+              ],
+              "properties": {
+                "menuItemId": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "default": 1
+                }
+              }
+            }
+          },
+          "deliveryAddress": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateOrderStatusRequest": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "placed",
+              "confirmed",
+              "preparing",
+              "ready",
+              "in_transit",
+              "delivered",
+              "cancelled"
+            ]
+          }
+        }
+      },
+      "OrderListResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            }
+          }
+        }
+      },
+      "GeoLocation": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "format": "float",
+            "example": 41.8781
+          },
+          "lng": {
+            "type": "number",
+            "format": "float",
+            "example": -87.6298
+          }
+        }
+      },
+      "DeliveryTracking": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "assigned",
+              "in_transit",
+              "delivered"
+            ]
+          },
+          "driverName": {
+            "type": "string",
+            "example": "Aisha Williams"
+          },
+          "driverPhone": {
+            "type": "string",
+            "example": "+1-312-555-0293"
+          },
+          "estimatedArrival": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "currentLocation": {
+            "$ref": "#/components/schemas/GeoLocation"
+          },
+          "deliveryAddress": {
+            "type": "string"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deliveredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "AssignDriverRequest": {
+        "type": "object",
+        "required": [
+          "driverName",
+          "driverPhone"
+        ],
+        "properties": {
+          "driverName": {
+            "type": "string"
+          },
+          "driverPhone": {
+            "type": "string"
+          }
+        }
+      },
+      "ActiveDeliveriesResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "deliveries": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/DeliveryTracking"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "customerName": {
+                      "type": "string"
+                    },
+                    "restaurantId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "DeleteResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Not Found"
+          },
+          "message": {
+            "type": "string",
+            "example": "Resource not found"
+          }
+        }
+      }
+    }
+  }
+}
