@@ -1,0 +1,43 @@
+{
+  "github": {
+    "owner": "your-github-org",
+    "visibility": "private",
+    "repo_prefix": "",
+    "default_branch": "main"
+  },
+  "postman": {
+    "domain": "grubhub-platform",
+    "domain_code": "GH",
+    "source_workspace_id": "00000000-0000-0000-0000-000000000000"
+  },
+  "services": [
+    {
+      "name": "orders-api",
+      "project_name": "Orders API",
+      "repo_name": "grubhub-orders-api",
+      "repo_description": "Orders API exported from Postman API Builder",
+      "target_workspace_id": "22222222-2222-2222-2222-222222222222",
+      "default_service_api_key": "set-this-here-or-in-the-generated-repo",
+      "source": {
+        "spec_id": "11111111-1111-1111-1111-111111111111",
+        "spec_file_path": "orders-api.yaml"
+      },
+      "environments": [
+        "dev",
+        "prod"
+      ],
+      "runtime_urls": {
+        "dev": "https://dev.api.grubhub.example/orders",
+        "prod": "https://api.grubhub.example/orders"
+      },
+      "environment_values": {
+        "all": {
+          "tenantId": "tenant-001"
+        },
+        "dev": {
+          "featureFlag": "true"
+        }
+      }
+    }
+  ]
+}

@@ -3,11 +3,29 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 
 const API_KEY = process.env.POSTMAN_API_KEY;
-const WORKSPACE_ID = process.env.POSTMAN_WORKSPACE_ID || '549c9382-ffb6-4f79-b7b7-2354db906862';
+const WORKSPACE_ID = process.env.POSTMAN_WORKSPACE_ID || readWorkspaceIdFromResources();
+const DEFAULT_BASE_URL = process.env.DEFAULT_BASE_URL || 'http://localhost:3000/api/v1';
+const DEFAULT_SERVICE_API_KEY = process.env.DEFAULT_SERVICE_API_KEY || process.env.API_KEY || 'grubhub-demo-key-2026';
+const DEFAULT_RESTAURANT_ID = process.env.DEFAULT_RESTAURANT_ID || 'rest-001';
+const DEFAULT_ORDER_ID = process.env.DEFAULT_ORDER_ID || 'order-001';
 
 if (!API_KEY) {
   console.error('POSTMAN_API_KEY is required');
   process.exit(1);
+}
+
+if (!WORKSPACE_ID) {
+  console.error('POSTMAN_WORKSPACE_ID is required. This repo no longer ships with a default workspace binding.');
+  process.exit(1);
+}
+
+function readWorkspaceIdFromResources() {
+  const resourcesPath = '.postman/resources.yaml';
+  if (!fs.existsSync(resourcesPath)) return '';
+
+  const content = fs.readFileSync(resourcesPath, 'utf8');
+  const match = content.match(/workspace:\s*\n\s*id:\s*([^\s]+)/m);
+  return match ? match[1] : '';
 }
 
 function api(method, path, body) {
@@ -242,10 +260,10 @@ async function main() {
       environment: {
         name: ENV_NAME,
         values: [
-          { key: 'baseUrl', value: 'http://localhost:3000/api/v1', type: 'default', enabled: true },
-          { key: 'apiKey', value: 'grubhub-demo-key-2026', type: 'secret', enabled: true },
-          { key: 'restaurantId', value: 'rest-001', type: 'default', enabled: true },
-          { key: 'orderId', value: 'order-001', type: 'default', enabled: true }
+          { key: 'baseUrl', value: DEFAULT_BASE_URL, type: 'default', enabled: true },
+          { key: 'apiKey', value: DEFAULT_SERVICE_API_KEY, type: 'secret', enabled: true },
+          { key: 'restaurantId', value: DEFAULT_RESTAURANT_ID, type: 'default', enabled: true },
+          { key: 'orderId', value: DEFAULT_ORDER_ID, type: 'default', enabled: true }
         ]
       }
     });
@@ -255,10 +273,10 @@ async function main() {
       environment: {
         name: ENV_NAME,
         values: [
-          { key: 'baseUrl', value: 'http://localhost:3000/api/v1', type: 'default', enabled: true },
-          { key: 'apiKey', value: 'grubhub-demo-key-2026', type: 'secret', enabled: true },
-          { key: 'restaurantId', value: 'rest-001', type: 'default', enabled: true },
-          { key: 'orderId', value: 'order-001', type: 'default', enabled: true }
+          { key: 'baseUrl', value: DEFAULT_BASE_URL, type: 'default', enabled: true },
+          { key: 'apiKey', value: DEFAULT_SERVICE_API_KEY, type: 'secret', enabled: true },
+          { key: 'restaurantId', value: DEFAULT_RESTAURANT_ID, type: 'default', enabled: true },
+          { key: 'orderId', value: DEFAULT_ORDER_ID, type: 'default', enabled: true }
         ]
       }
     });

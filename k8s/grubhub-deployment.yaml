@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grubhub-partner-api
-  namespace: atlas-production
   labels:
     app: grubhub-partner-api
     team: grubhub
@@ -17,25 +16,11 @@ spec:
         app: grubhub-partner-api
         team: grubhub
     spec:
-      initContainers:
-        - name: clone-repo
-          image: alpine/git:latest
-          command:
-            - sh
-            - -c
-            - |
-              git clone --depth 1 https://github.com/shivemind/grubhub-v12-demo.git /app
-          volumeMounts:
-            - name: app-code
-              mountPath: /app
       containers:
         - name: grubhub-partner-api
-          image: node:20-slim
-          command:
-            - sh
-            - -c
-            - |
-              cd /app && npm install --production && node server.js
+          # Replace this placeholder image with one built from this repository.
+          image: ghcr.io/your-org/grubhub-v12-demo:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
               protocol: TCP
@@ -44,9 +29,11 @@ spec:
               value: production
             - name: PORT
               value: "3000"
-          volumeMounts:
-            - name: app-code
-              mountPath: /app
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: grubhub-partner-api
+                  key: api-key
           resources:
             requests:
               cpu: 100m
@@ -66,15 +53,11 @@ spec:
               port: 3000
             initialDelaySeconds: 20
             periodSeconds: 15
-      volumes:
-        - name: app-code
-          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: grubhub-partner-api
-  namespace: atlas-production
   labels:
     app: grubhub-partner-api
     team: grubhub

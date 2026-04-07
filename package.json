@@ -13,7 +13,7 @@
     "api",
     "demo"
   ],
-  "author": "Daniel Shively",
+  "author": "Postman Customer Engineering",
   "license": "MIT",
   "dependencies": {
     "cors": "^2.8.6",

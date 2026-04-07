@@ -1,0 +1,14 @@
+{
+  "github": {
+    "owner": "",
+    "visibility": "private",
+    "repo_prefix": "",
+    "default_branch": "main"
+  },
+  "postman": {
+    "domain": "customer-domain",
+    "domain_code": "CUST",
+    "source_workspace_id": ""
+  },
+  "services": []
+}

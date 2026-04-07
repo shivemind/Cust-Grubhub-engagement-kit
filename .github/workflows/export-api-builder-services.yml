@@ -1,0 +1,178 @@
+name: Export API Builder Services
+
+on:
+  workflow_dispatch:
+    inputs:
+      config_path:
+        description: Path to the service inventory JSON file
+        required: false
+        default: config/api-builder-services.json
+      service_filter:
+        description: Optional comma-separated list of service names to export
+        required: false
+        default: ''
+      dry_run:
+        description: Generate scaffolds without creating or pushing target repos
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      count: ${{ steps.matrix.outputs.count }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build service matrix
+        id: matrix
+        run: node scripts/build-api-builder-matrix.js
+        env:
+          SERVICE_CONFIG_PATH: ${{ inputs.config_path }}
+          SERVICE_FILTER: ${{ inputs.service_filter }}
+
+      - name: No services configured
+        if: ${{ steps.matrix.outputs.count == '0' }}
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+          ## API Builder Export
+
+          No services were selected. Populate `config/api-builder-services.json` or pass a `service_filter`.
+          EOF
+
+  scaffold:
+    needs: discover
+    if: ${{ needs.discover.outputs.count != '0' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate required secrets
+        if: ${{ !inputs.dry_run }}
+        run: |
+          test -n "${POSTMAN_API_KEY}${POSTMAN_ACCESS_TOKEN}" || { echo "POSTMAN_API_KEY or POSTMAN_ACCESS_TOKEN is required"; exit 1; }
+          test -n "${GH_REPO_ADMIN_TOKEN}" || { echo "GH_REPO_ADMIN_TOKEN is required"; exit 1; }
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          POSTMAN_ACCESS_TOKEN: ${{ secrets.POSTMAN_ACCESS_TOKEN }}
+          GH_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
+
+      - name: Export service scaffold
+        run: node scripts/export-api-builder-service.js --config "${SERVICE_CONFIG_PATH}" --service "${SERVICE_NAME}" --output-dir "${RUNNER_TEMP}/service-repo"
+        env:
+          SERVICE_CONFIG_PATH: ${{ inputs.config_path }}
+          SERVICE_NAME: ${{ matrix.service.name }}
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          POSTMAN_ACCESS_TOKEN: ${{ secrets.POSTMAN_ACCESS_TOKEN }}
+
+      - name: Show scaffold contents
+        run: find "${RUNNER_TEMP}/service-repo" -maxdepth 4 -type f | sort
+
+      - name: Create target repo
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
+          TARGET_REPO: ${{ matrix.service.repo_full_name }}
+          TARGET_VISIBILITY: ${{ matrix.service.repo_visibility }}
+          TARGET_DESCRIPTION: ${{ matrix.service.repo_description }}
+        run: |
+          set -euo pipefail
+
+          if gh repo view "$TARGET_REPO" >/dev/null 2>&1; then
+            echo "Repository already exists: $TARGET_REPO"
+            exit 0
+          fi
+
+          case "$TARGET_VISIBILITY" in
+            public) gh repo create "$TARGET_REPO" --public --description "$TARGET_DESCRIPTION" --confirm ;;
+            internal) gh repo create "$TARGET_REPO" --internal --description "$TARGET_DESCRIPTION" --confirm ;;
+            *) gh repo create "$TARGET_REPO" --private --description "$TARGET_DESCRIPTION" --confirm ;;
+          esac
+
+      - name: Seed target repo secrets
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
+          TARGET_REPO: ${{ matrix.service.repo_full_name }}
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          POSTMAN_ACCESS_TOKEN: ${{ secrets.POSTMAN_ACCESS_TOKEN }}
+          GH_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "$POSTMAN_API_KEY" | gh secret set POSTMAN_API_KEY --repo "$TARGET_REPO"
+
+          if [ -n "${POSTMAN_ACCESS_TOKEN:-}" ]; then
+            echo "$POSTMAN_ACCESS_TOKEN" | gh secret set POSTMAN_ACCESS_TOKEN --repo "$TARGET_REPO"
+          fi
+
+          echo "$GH_REPO_ADMIN_TOKEN" | gh secret set GH_FALLBACK_TOKEN --repo "$TARGET_REPO"
+
+      - name: Push scaffold into target repo
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
+          TARGET_REPO: ${{ matrix.service.repo_full_name }}
+          SERVICE_NAME: ${{ matrix.service.name }}
+        run: |
+          set -euo pipefail
+
+          STAGING_DIR="${RUNNER_TEMP}/service-repo"
+          TARGET_DIR="${RUNNER_TEMP}/target-repo"
+          REMOTE_URL="https://x-access-token:${GH_TOKEN}@github.com/${TARGET_REPO}.git"
+
+          rm -rf "$TARGET_DIR"
+          mkdir -p "$TARGET_DIR"
+
+          cd "$TARGET_DIR"
+          git init -b main
+          git remote add origin "$REMOTE_URL"
+
+          if git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
+            git fetch origin main
+            git checkout -B main origin/main
+          fi
+
+          rsync -a "$STAGING_DIR"/ "$TARGET_DIR"/
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit for ${SERVICE_NAME}"
+            exit 0
+          fi
+
+          git commit -m "feat: bootstrap ${SERVICE_NAME} from Postman API Builder"
+          git push origin HEAD:main
+
+      - name: Write summary
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          ## ${{ matrix.service.name }}
+
+          - Target repo: \`${{ matrix.service.repo_full_name }}\`
+          - Dry run: \`${{ inputs.dry_run }}\`
+          EOF

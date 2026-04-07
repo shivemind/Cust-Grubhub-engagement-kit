@@ -84,14 +84,16 @@ flowchart LR
 
 ### Connecting Git Sync (Postman v12)
 
-1. Open the **GrubHub V12 Demo** workspace in Postman
-2. Click the collection **GrubHub Partner Restaurant API**
-3. Go to the **Source Control** tab (branch icon in the right sidebar)
+1. Create or open the Postman workspace you want to use for this repo
+2. Import or generate the API assets from `spec/grubhub-partner-api.yaml`
+3. Go to the **Source Control** tab in Postman
 4. Click **Connect to Git Repository**
 5. Select **GitHub** and authorize Postman if prompted
-6. Choose repository and set branch to `main`
+6. Choose this repository and set branch to `main`
 7. Set the spec file path to `spec/grubhub-partner-api.yaml`
 8. Click **Connect**
+
+`.postman/resources.yaml` intentionally ships without a workspace ID so the repo does not point at any internal Postman workspace by default.
 
 ### GitHub Actions CI
 
@@ -100,8 +102,28 @@ Add these GitHub secrets/variables to enable CI:
 | Type | Name | Value |
 |---|---|---|
 | Secret | `POSTMAN_API_KEY` | Your Postman API key |
-| Variable | `POSTMAN_COLLECTION_ID` | `21b66ff0-513a-45ba-834f-9f759c1e36e5` |
-| Variable | `POSTMAN_ENVIRONMENT_ID` | `7f0494fc-28d6-4cdf-9abb-ab7823eafeb3` |
+| Variable | `POSTMAN_WORKSPACE_ID` | Workspace ID to use for the root repo onboarding workflow |
+| Variable | `POSTMAN_COLLECTION_ID` | Optional collection UID to run in CI |
+| Variable | `POSTMAN_ENVIRONMENT_ID` | Optional environment UID paired with `POSTMAN_COLLECTION_ID` |
+
+### API Builder Export Workflow
+
+This repo now includes `.github/workflows/export-api-builder-services.yml` for the repo-per-service flow:
+
+1. Export a YAML spec from Postman API Builder
+2. Scaffold a dedicated GitHub repo for that service
+3. Push the spec and onboarding files into the new repo
+4. Let the target repo provision its own Postman workspace and Spec Hub assets on push
+
+Fill `config/api-builder-services.json` with the source spec IDs, file paths, target repo names, and the dedicated Postman workspace ID for each generated repo. You can also set `default_service_api_key` and optional `environment_values` there so the generated workspace environments are runnable on first bootstrap. Generated repos now create both a full API collection and a smoke-safe collection; the smoke collection is intended for monitors and customer-safe runner usage. A sample shape with placeholder values is included in `config/api-builder-services.example.json`.
+
+Required secrets for the export workflow:
+
+| Type | Name | Value |
+|---|---|---|
+| Secret | `POSTMAN_API_KEY` | Postman API key used to export from API Builder |
+| Secret | `POSTMAN_ACCESS_TOKEN` | Postman access token alternative for export and generated repo onboarding |
+| Secret | `GH_REPO_ADMIN_TOKEN` | GitHub token that can create repos, set repo secrets, and push commits |
 
 ## API Endpoints
 
@@ -143,5 +165,5 @@ Cust-GRUBHUB-v12-demo/
 │   └── onboard-to-postman.js    # Workspace setup via Postman API
 ├── k8s/                         # Kubernetes deployment manifest
 ├── .github/workflows/           # CI pipeline
-└── .postman/resources.yaml      # Git-connected workspace config
+└── .postman/resources.yaml      # Optional local Postman workspace metadata
 ```

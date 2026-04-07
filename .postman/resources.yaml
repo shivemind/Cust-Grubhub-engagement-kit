@@ -1,7 +1,4 @@
-# Use this workspace to collaborate
-workspace:
-  id: 549c9382-ffb6-4f79-b7b7-2354db906862
-
+# Optionally add a local-only workspace id here when connecting this repo to Postman.
 localResources:
   specs:
     - ../spec/grubhub-partner-api.yaml

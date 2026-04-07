@@ -68,7 +68,7 @@ jobs:
       - name: Lint OpenAPI spec
         continue-on-error: true
         run: |
-          postman api lint --api-definition spec/grubhub-partner-api.yaml
+          postman api lint spec/grubhub-partner-api.yaml
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
@@ -100,6 +100,7 @@ jobs:
         run: node -e "const y=require('js-yaml');const f=require('fs');f.writeFileSync('spec/grubhub-partner-api.json',JSON.stringify(y.load(f.readFileSync('spec/grubhub-partner-api.yaml','utf8')),null,2))"
 
       - name: Push spec to Spec Hub and derive assets
+        if: ${{ secrets.POSTMAN_API_KEY != '' && vars.POSTMAN_WORKSPACE_ID != '' }}
         run: node scripts/onboard-to-postman.js
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
