@@ -1,5 +1,5 @@
 {
-  "name": "grubhub-v12-demo",
+  "name": "cust-grubhub-engagement-kit",
   "version": "1.0.0",
   "description": "GrubHub Partner Restaurant API — Postman v12 Enterprise Demo",
   "main": "server.js",

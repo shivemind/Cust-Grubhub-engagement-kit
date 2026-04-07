@@ -19,7 +19,7 @@ spec:
       containers:
         - name: grubhub-partner-api
           # Replace this placeholder image with one built from this repository.
-          image: ghcr.io/your-org/grubhub-v12-demo:latest
+          image: ghcr.io/your-org/cust-grubhub-engagement-kit:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000

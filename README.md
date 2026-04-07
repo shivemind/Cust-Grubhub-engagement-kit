@@ -1,4 +1,4 @@
-# Cust-GRUBHUB-v12-demo
+# Cust-Grubhub-engagement-kit
 
 A food-delivery themed API service built to demonstrate **Postman v12 Enterprise** capabilities to GrubHub.
 
@@ -152,7 +152,7 @@ The UI at `http://localhost:3000` has three tabs:
 ## Project Structure
 
 ```
-Cust-GRUBHUB-v12-demo/
+Cust-Grubhub-engagement-kit/
 ├── server.js                    # Express 5 entry point
 ├── spec/
 │   └── grubhub-partner-api.yaml # OpenAPI 3.0 source of truth
