@@ -128,6 +128,54 @@ function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function resolveOptionalString(...values) {
+  for (const value of values) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+
+    const normalized = String(value).trim();
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return '';
+}
+
+function resolveOptionalBoolean(...values) {
+  for (const value of values) {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true') {
+        return true;
+      }
+      if (normalized === 'false') {
+        return false;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeStringMap(rawConfig) {
+  if (!isPlainObject(rawConfig)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(rawConfig)
+      .filter(([key, value]) => key && value !== undefined && value !== null)
+      .sort(([left], [right]) => String(left).localeCompare(String(right)))
+      .map(([key, value]) => [String(key), String(value)])
+  );
+}
+
 function stringifyEnvironmentValue(value) {
   if (value === undefined || value === null) {
     return '';
@@ -308,7 +356,10 @@ async function exportApiSchemaFromGateway(service, source) {
 
   return {
     specContent,
+    sourceType: 'api-builder',
+    sourceApiId: source.api_id || '',
     sourceSchemaId: (schema && schema.id) || source.schema_id || '',
+    sourceSchemaFilePath: source.schema_file_path || `${slugify(service.name)}.yaml`,
     sourceFilePath: source.schema_file_path || `${slugify(service.name)}.yaml`
   };
 }
@@ -345,6 +396,8 @@ async function exportSpecificationFile(service, source) {
 
   return {
     specContent,
+    sourceType: 'specification',
+    sourceSpecId: source.spec_id || '',
     sourceFilePath: targetFile.path || targetFile.name || source.spec_file_path
   };
 }
@@ -365,8 +418,12 @@ async function exportSpecFromPostman(service, config) {
 
     return {
       specContent: fs.readFileSync(localSpecPath, 'utf8'),
+      sourceType: 'local',
       sourceWorkspaceId,
+      sourceApiId: '',
       sourceSpecId: '',
+      sourceSchemaId: '',
+      sourceSchemaFilePath: path.basename(localSpecPath),
       sourceFilePath: path.basename(localSpecPath)
     };
   }
@@ -376,9 +433,12 @@ async function exportSpecFromPostman(service, config) {
 
     return {
       specContent: exported.specContent,
+      sourceType: exported.sourceType,
       sourceWorkspaceId,
-      sourceSpecId: source.api_id,
+      sourceApiId: source.api_id,
+      sourceSpecId: '',
       sourceSchemaId: exported.sourceSchemaId,
+      sourceSchemaFilePath: exported.sourceSchemaFilePath,
       sourceFilePath: exported.sourceFilePath
     };
   }
@@ -388,8 +448,12 @@ async function exportSpecFromPostman(service, config) {
 
     return {
       specContent: exported.specContent,
+      sourceType: exported.sourceType,
       sourceWorkspaceId,
-      sourceSpecId: source.spec_id,
+      sourceApiId: '',
+      sourceSpecId: exported.sourceSpecId,
+      sourceSchemaId: '',
+      sourceSchemaFilePath: '',
       sourceFilePath: exported.sourceFilePath
     };
   }
@@ -475,17 +539,70 @@ function resolveEnvironmentValues(service, config) {
 function buildManifest(service, config, repoMetadata, specRelativePath, sourceInfo) {
   const serviceName = service.name;
   const projectName = service.project_name || toPrettyTitle(serviceName);
-  const domain = service.domain || (config.postman && config.postman.domain) || '';
-  const domainCode =
-    service.domain_code ||
-    (config.postman && config.postman.domain_code) ||
-    '';
+  const configPostman = isPlainObject(config.postman) ? config.postman : {};
+  const servicePostman = isPlainObject(service.postman) ? service.postman : {};
+  const domain = service.domain || configPostman.domain || '';
+  const domainCode = service.domain_code || configPostman.domain_code || '';
   const workspaceName =
     service.workspace_name ||
     (domainCode ? `[${domainCode}] ${projectName}` : projectName);
   const collectionName = service.collection_name || projectName;
   const workspaceId = resolveTargetWorkspaceId(service, config);
   const environmentValues = resolveEnvironmentValues(service, config);
+  const governanceMapping = {
+    ...normalizeStringMap(configPostman.governance_mapping),
+    ...normalizeStringMap(service.governance_mapping),
+    ...normalizeStringMap(servicePostman.governance_mapping)
+  };
+  const systemEnvMap = {
+    ...normalizeStringMap(configPostman.system_env_map),
+    ...normalizeStringMap(service.system_env_map),
+    ...normalizeStringMap(servicePostman.system_env_map)
+  };
+  const requesterEmail = resolveOptionalString(
+    servicePostman.requester_email,
+    service.requester_email,
+    configPostman.requester_email
+  );
+  const workspaceAdminUserIds = resolveOptionalString(
+    servicePostman.workspace_admin_user_ids,
+    service.workspace_admin_user_ids,
+    configPostman.workspace_admin_user_ids
+  );
+  const postmanTeamId = resolveOptionalString(
+    servicePostman.team_id,
+    service.team_id,
+    configPostman.team_id
+  );
+  const workspaceTeamId = resolveOptionalString(
+    servicePostman.workspace_team_id,
+    service.workspace_team_id,
+    configPostman.workspace_team_id
+  );
+  const orgMode =
+    resolveOptionalBoolean(
+      servicePostman.org_mode,
+      service.org_mode,
+      configPostman.org_mode
+    ) ?? false;
+  const requireApiCatalogLink =
+    resolveOptionalBoolean(
+      servicePostman.require_api_catalog_link,
+      service.require_api_catalog_link,
+      configPostman.require_api_catalog_link
+    ) ?? true;
+  const requireSystemEnvAssociation =
+    resolveOptionalBoolean(
+      servicePostman.require_system_env_association,
+      service.require_system_env_association,
+      configPostman.require_system_env_association
+    ) ?? true;
+  const integrationBackend =
+    resolveOptionalString(
+      servicePostman.integration_backend,
+      service.integration_backend,
+      configPostman.integration_backend
+    ) || 'bifrost';
 
   return {
     name: serviceName,
@@ -494,9 +611,12 @@ function buildManifest(service, config, repoMetadata, specRelativePath, sourceIn
     domain_code: domainCode,
     spec_path: specRelativePath,
     source: {
+      type: sourceInfo.sourceType || '',
       workspace_id: sourceInfo.sourceWorkspaceId || '',
+      api_id: sourceInfo.sourceApiId || '',
       spec_id: sourceInfo.sourceSpecId || '',
       schema_id: sourceInfo.sourceSchemaId || '',
+      schema_file_path: sourceInfo.sourceSchemaFilePath || '',
       spec_file_path: sourceInfo.sourceFilePath || ''
     },
     github: {
@@ -517,7 +637,17 @@ function buildManifest(service, config, repoMetadata, specRelativePath, sourceIn
       smoke_collection_name:
         service.smoke_collection_name || `${collectionName} Smoke`,
       environment_name_prefix: service.environment_name_prefix || projectName,
-      monitor_name: service.monitor_name || `${projectName} Smoke Monitor`
+      monitor_name: service.monitor_name || `${projectName} Smoke Monitor`,
+      governance_mapping: governanceMapping,
+      system_env_map: systemEnvMap,
+      requester_email: requesterEmail,
+      workspace_admin_user_ids: workspaceAdminUserIds,
+      team_id: postmanTeamId,
+      workspace_team_id: workspaceTeamId,
+      org_mode: orgMode,
+      require_api_catalog_link: requireApiCatalogLink,
+      require_system_env_association: requireSystemEnvAssociation,
+      integration_backend: integrationBackend
     }
   };
 }
@@ -540,13 +670,6 @@ function buildResourcesYaml(specRelativePath, workspaceId) {
   lines.push('');
 
   return lines.join('\n');
-}
-
-function copyTemplateFile(relativePath, outputRoot) {
-  const sourcePath = path.join(TEMPLATE_ROOT, relativePath);
-  const destinationPath = path.join(outputRoot, relativePath);
-  ensureDir(path.dirname(destinationPath));
-  fs.copyFileSync(sourcePath, destinationPath);
 }
 
 async function main() {
@@ -603,8 +726,13 @@ async function main() {
       templateValues
     )
   );
-
-  copyTemplateFile(path.join('scripts', 'onboard-to-postman.js'), outputRoot);
+  writeFile(
+    path.join(outputRoot, 'scripts', 'resolve-system-env-map.js'),
+    renderTemplate(
+      path.join('scripts', 'resolve-system-env-map.js.tpl'),
+      templateValues
+    )
+  );
 
   process.stdout.write(
     [

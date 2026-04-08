@@ -110,19 +110,23 @@ Add these GitHub secrets/variables to enable CI:
 
 This repo now includes `.github/workflows/export-api-builder-services.yml` for the repo-per-service flow:
 
-1. Export a YAML spec from Postman API Builder
+1. Export a YAML spec from Postman API Builder using `source.api_id`, `source.schema_id`, and `source.schema_file_path`
 2. Scaffold a dedicated GitHub repo for that service
-3. Push the spec and onboarding files into the new repo
-4. Let the target repo provision its own Postman workspace and Spec Hub assets on push
+3. Push the service YAML and onboarding files into the new repo
+4. Let the target repo call `postman-cs/postman-api-onboarding-action@v0`, which chains `postman-cs/postman-bootstrap-action` and `postman-cs/postman-repo-sync-action`
+5. Auto-discover the team's system environments through Bifrost, then link the generated Postman workspace environments to those system environments
+6. Require the generated repo to link its dedicated Spec Hub workspace back to the repo through Bifrost so the API Catalog path is actually in place
 
-Fill `config/api-builder-services.json` with the source spec IDs, file paths, target repo names, and the dedicated Postman workspace ID for each generated repo. You can also set `default_service_api_key` and optional `environment_values` there so the generated workspace environments are runnable on first bootstrap. Generated repos now create both a full API collection and a smoke-safe collection; the smoke collection is intended for monitors and customer-safe runner usage. A sample shape with placeholder values is included in `config/api-builder-services.example.json`.
+Fill `config/api-builder-services.json` with the source API Builder IDs, schema file paths, target repo names, and the dedicated Postman workspace ID for each generated repo. The `postman` block can also carry Bifrost/API Catalog settings such as `integration_backend`, `require_api_catalog_link`, `require_system_env_association`, `governance_mapping`, `system_env_map`, `requester_email`, `workspace_admin_user_ids`, `team_id`, `workspace_team_id`, and `org_mode`, with optional service-level overrides under each service's own `postman` block. The source workflow now fails fast if the config tries to map multiple services to the same repo or workspace, and generated repo onboarding runs are serialized per repo so overlapping reruns cannot provision duplicate workspace assets. Generated repos keep the exported YAML in Git, then serve that checked-in spec from a temporary local HTTPS endpoint during CI so the shared Postman CS onboarding action can ingest it into Spec Hub without exposing a private repo raw URL. After the first successful onboarding run, the generated repo seeds repo variables and `.postman/resources.yaml` with the resolved Postman asset ids so later reruns stay pinned to the same workspace, spec, collections, environments, mock, monitor, team id, and system environment map. Generated repos default collection sync to `reuse` so the customer workspace stays on one baseline/smoke/contract set unless the repo explicitly opts into `refresh` or `version`. They also pass `integration-backend: bifrost` explicitly, auto-discover missing system environment ids from Bifrost using the team's access token, and fail the workflow if repo sync does not report a successful Bifrost workspace link or environment association for the generated workspace. A sample shape with placeholder values is included in `config/api-builder-services.example.json`.
+
+For a standalone visual of this flow, see `PIPELINE_DIAGRAM.md`.
 
 Required secrets for the export workflow:
 
 | Type | Name | Value |
 |---|---|---|
-| Secret | `POSTMAN_API_KEY` | Postman API key used to export from API Builder |
-| Secret | `POSTMAN_ACCESS_TOKEN` | Postman access token alternative for export and generated repo onboarding |
+| Secret | `POSTMAN_API_KEY` | Postman API key used to export from API Builder and bootstrap Postman assets |
+| Secret | `POSTMAN_ACCESS_TOKEN` | Postman access token required for Bifrost workspace linking, governance assignment, and environment association |
 | Secret | `GH_REPO_ADMIN_TOKEN` | GitHub token that can create repos, set repo secrets, and push commits |
 
 ## API Endpoints

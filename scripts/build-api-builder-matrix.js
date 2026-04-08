@@ -16,6 +16,14 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '');
 }
 
+function toPrettyTitle(value) {
+  return String(value || '')
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(' ');
+}
+
 function loadConfig(configPath) {
   const absolutePath = path.resolve(configPath);
   if (!fs.existsSync(absolutePath)) {
@@ -90,6 +98,74 @@ function resolveRepoMetadata(config, service) {
   };
 }
 
+function deriveWorkspaceIdentity(config, service) {
+  const configPostman =
+    config.postman && typeof config.postman === 'object' ? config.postman : {};
+  const servicePostman =
+    service.postman && typeof service.postman === 'object' ? service.postman : {};
+  const projectName = service.project_name || toPrettyTitle(service.name);
+  const domainCode =
+    service.domain_code ||
+    configPostman.domain_code ||
+    '';
+  const workspaceId =
+    service.target_workspace_id ||
+    servicePostman.workspace_id ||
+    configPostman.workspace_id ||
+    '';
+  const workspaceName =
+    service.workspace_name ||
+    (domainCode ? `[${domainCode}] ${projectName}` : projectName);
+
+  if (workspaceId) {
+    return {
+      key: `id:${workspaceId}`,
+      display: workspaceId
+    };
+  }
+
+  return {
+    key: `name:${workspaceName}`,
+    display: workspaceName
+  };
+}
+
+function validateUniqueServices(config, services) {
+  const seenServiceNames = new Map();
+  const seenRepos = new Map();
+  const seenWorkspaces = new Map();
+
+  for (const service of services) {
+    const serviceName = String(service.name || '').trim();
+    if (!serviceName) {
+      fail('Each service must have a non-empty name.');
+    }
+
+    if (seenServiceNames.has(serviceName)) {
+      fail(`Duplicate service name "${serviceName}" found in the service config.`);
+    }
+    seenServiceNames.set(serviceName, true);
+
+    const repoMetadata = resolveRepoMetadata(config, service);
+    if (seenRepos.has(repoMetadata.repo_full_name)) {
+      fail(
+        `Services "${seenRepos.get(repoMetadata.repo_full_name)}" and "${serviceName}" both target repo ` +
+        `"${repoMetadata.repo_full_name}". One service must own one repo.`
+      );
+    }
+    seenRepos.set(repoMetadata.repo_full_name, serviceName);
+
+    const workspaceIdentity = deriveWorkspaceIdentity(config, service);
+    if (seenWorkspaces.has(workspaceIdentity.key)) {
+      fail(
+        `Services "${seenWorkspaces.get(workspaceIdentity.key)}" and "${serviceName}" both target workspace ` +
+        `"${workspaceIdentity.display}". One service must own one workspace.`
+      );
+    }
+    seenWorkspaces.set(workspaceIdentity.key, serviceName);
+  }
+}
+
 function main() {
   const configPath = process.env.SERVICE_CONFIG_PATH || 'config/api-builder-services.json';
   const serviceFilter = parseFilter(process.env.SERVICE_FILTER);
@@ -107,6 +183,8 @@ function main() {
       fail(`Unknown service name(s): ${missing.join(', ')}`);
     }
   }
+
+  validateUniqueServices(config, services);
 
   const matrix = services.map((service) => ({
     name: service.name,
