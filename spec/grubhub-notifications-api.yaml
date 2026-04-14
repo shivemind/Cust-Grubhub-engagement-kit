@@ -1,0 +1,342 @@
+openapi: 3.0.3
+info:
+  title: GrubHub Notifications API
+  description: |
+    REST API for managing push notifications, SMS alerts, and email
+    communications across the GrubHub platform.
+  version: 1.0.0
+  contact:
+    name: GrubHub API Platform Team
+    email: api-platform@grubhub.com
+
+servers:
+  - url: http://localhost:3002/api/v1
+    description: Local development server
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Notifications
+    description: Notification dispatch and management
+  - name: Preferences
+    description: User notification preferences
+  - name: Templates
+    description: Notification template management
+
+paths:
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      operationId: listNotifications
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+        - name: channel
+          in: query
+          schema:
+            type: string
+            enum: [push, sms, email]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, sent, delivered, failed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  total:
+                    type: integer
+    post:
+      tags: [Notifications]
+      summary: Send a notification
+      operationId: sendNotification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '201':
+          description: Notification queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+
+  /notifications/{notificationId}:
+    get:
+      tags: [Notifications]
+      summary: Get notification status
+      operationId: getNotification
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+
+  /notifications/bulk:
+    post:
+      tags: [Notifications]
+      summary: Send bulk notifications
+      operationId: sendBulkNotifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [notifications]
+              properties:
+                notifications:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '201':
+          description: Bulk notifications queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queued:
+                    type: integer
+                  failed:
+                    type: integer
+                  batchId:
+                    type: string
+
+  /preferences/{userId}:
+    get:
+      tags: [Preferences]
+      summary: Get user notification preferences
+      operationId: getPreferences
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+    put:
+      tags: [Preferences]
+      summary: Update user notification preferences
+      operationId: updatePreferences
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferences'
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+
+  /templates:
+    get:
+      tags: [Templates]
+      summary: List notification templates
+      operationId: listTemplates
+      responses:
+        '200':
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  templates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Template'
+
+  /templates/{templateId}:
+    get:
+      tags: [Templates]
+      summary: Get template details
+      operationId: getTemplate
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Service health check
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        channel:
+          type: string
+          enum: [push, sms, email]
+        templateId:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        status:
+          type: string
+          enum: [pending, sent, delivered, failed]
+        sentAt:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: string
+          format: date-time
+
+    NotificationRequest:
+      type: object
+      required: [userId, channel, body]
+      properties:
+        userId:
+          type: string
+        channel:
+          type: string
+          enum: [push, sms, email]
+        templateId:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    UserPreferences:
+      type: object
+      properties:
+        userId:
+          type: string
+        orderUpdates:
+          type: boolean
+          default: true
+        promotions:
+          type: boolean
+          default: false
+        deliveryAlerts:
+          type: boolean
+          default: true
+        channels:
+          type: object
+          properties:
+            push:
+              type: boolean
+              default: true
+            sms:
+              type: boolean
+              default: false
+            email:
+              type: boolean
+              default: true
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        channel:
+          type: string
+          enum: [push, sms, email]
+        subject:
+          type: string
+        bodyTemplate:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time

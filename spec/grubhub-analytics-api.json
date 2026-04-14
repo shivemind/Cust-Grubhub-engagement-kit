@@ -1,0 +1,609 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GrubHub Analytics API",
+    "description": "REST API for restaurant performance analytics, order trends, and\nplatform usage insights on the GrubHub platform.\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "GrubHub API Platform Team",
+      "email": "api-platform@grubhub.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3003/api/v1",
+      "description": "Local development server"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Restaurant Analytics",
+      "description": "Restaurant performance metrics"
+    },
+    {
+      "name": "Order Analytics",
+      "description": "Order volume and trend analysis"
+    },
+    {
+      "name": "Revenue",
+      "description": "Revenue reporting and breakdowns"
+    }
+  ],
+  "paths": {
+    "/analytics/restaurants/{restaurantId}/summary": {
+      "get": {
+        "tags": [
+          "Restaurant Analytics"
+        ],
+        "summary": "Get restaurant performance summary",
+        "operationId": "getRestaurantSummary",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restaurant performance summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestaurantSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/restaurants/{restaurantId}/ratings": {
+      "get": {
+        "tags": [
+          "Restaurant Analytics"
+        ],
+        "summary": "Get restaurant ratings breakdown",
+        "operationId": "getRestaurantRatings",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d",
+                "1y"
+              ],
+              "default": "30d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ratings breakdown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingsBreakdown"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/orders/trends": {
+      "get": {
+        "tags": [
+          "Order Analytics"
+        ],
+        "summary": "Get order volume trends",
+        "operationId": "getOrderTrends",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hourly",
+                "daily",
+                "weekly",
+                "monthly"
+              ],
+              "default": "daily"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order trend data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderTrends"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/orders/top-items": {
+      "get": {
+        "tags": [
+          "Order Analytics"
+        ],
+        "summary": "Get top-selling menu items",
+        "operationId": "getTopItems",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ],
+              "default": "30d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top-selling items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TopItem"
+                      }
+                    },
+                    "period": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/revenue": {
+      "get": {
+        "tags": [
+          "Revenue"
+        ],
+        "summary": "Get revenue report",
+        "operationId": "getRevenueReport",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "default": "day"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revenue report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/revenue/breakdown": {
+      "get": {
+        "tags": [
+          "Revenue"
+        ],
+        "summary": "Get revenue breakdown by category",
+        "operationId": "getRevenueBreakdown",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ],
+              "default": "30d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revenue breakdown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueBreakdown"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Service health check",
+        "operationId": "getHealth",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "schemas": {
+      "RestaurantSummary": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "totalOrders": {
+            "type": "integer"
+          },
+          "averageOrderValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalRevenue": {
+            "type": "number",
+            "format": "double"
+          },
+          "averageRating": {
+            "type": "number",
+            "format": "double"
+          },
+          "averagePrepTime": {
+            "type": "number",
+            "format": "double",
+            "description": "Average preparation time in minutes"
+          },
+          "cancellationRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "startDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "endDate": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        }
+      },
+      "RatingsBreakdown": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "averageRating": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalReviews": {
+            "type": "integer"
+          },
+          "distribution": {
+            "type": "object",
+            "properties": {
+              "fiveStar": {
+                "type": "integer"
+              },
+              "fourStar": {
+                "type": "integer"
+              },
+              "threeStar": {
+                "type": "integer"
+              },
+              "twoStar": {
+                "type": "integer"
+              },
+              "oneStar": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "OrderTrends": {
+        "type": "object",
+        "properties": {
+          "granularity": {
+            "type": "string"
+          },
+          "dataPoints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "orderCount": {
+                  "type": "integer"
+                },
+                "totalValue": {
+                  "type": "number",
+                  "format": "double"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TopItem": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "orderCount": {
+            "type": "integer"
+          },
+          "totalRevenue": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "RevenueReport": {
+        "type": "object",
+        "properties": {
+          "totalRevenue": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalOrders": {
+            "type": "integer"
+          },
+          "averageOrderValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "dataPoints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "revenue": {
+                  "type": "number",
+                  "format": "double"
+                },
+                "orderCount": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "RevenueBreakdown": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string"
+                },
+                "revenue": {
+                  "type": "number",
+                  "format": "double"
+                },
+                "percentage": {
+                  "type": "number",
+                  "format": "double"
+                },
+                "orderCount": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}
