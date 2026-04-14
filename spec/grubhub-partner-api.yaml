@@ -11,8 +11,12 @@ info:
     email: api-platform@grubhub.com
 
 servers:
+  - url: https://api.grubhub.com/partner/v1
+    description: Production
+  - url: https://staging-api.grubhub.com/partner/v1
+    description: Staging
   - url: http://localhost:3000/api/v1
-    description: Local development server
+    description: Local development
 
 security:
   - ApiKeyAuth: []

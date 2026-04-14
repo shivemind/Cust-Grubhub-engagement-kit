@@ -1,4 +1,16 @@
-# Optionally add a local-only workspace id here when connecting this repo to Postman.
+workspace:
+  id: b498c773-f575-4e4f-995f-cdd10990188e
+
 localResources:
   specs:
     - ../spec/grubhub-partner-api.yaml
+    - ../spec/grubhub-payments-api.yaml
+    - ../spec/grubhub-notifications-api.yaml
+    - ../spec/grubhub-analytics-api.yaml
+
+cloudResources:
+  specs:
+    ../spec/grubhub-partner-api.yaml: d184d75b-2eab-4b6d-97f4-c80ffc268105
+    ../spec/grubhub-payments-api.yaml: 1cc9d1e8-ad6e-4eb4-849a-5e32beb33078
+    ../spec/grubhub-notifications-api.yaml: 07d3a58d-0584-4258-9ae6-ececf96a93b6
+    ../spec/grubhub-analytics-api.yaml: 2136f415-817f-49bf-9610-9296073dd92e

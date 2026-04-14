@@ -10,8 +10,12 @@ info:
     email: api-platform@grubhub.com
 
 servers:
+  - url: https://api.grubhub.com/analytics/v1
+    description: Production
+  - url: https://staging-api.grubhub.com/analytics/v1
+    description: Staging
   - url: http://localhost:3003/api/v1
-    description: Local development server
+    description: Local development
 
 security:
   - ApiKeyAuth: []
@@ -23,6 +27,8 @@ tags:
     description: Order volume and trend analysis
   - name: Revenue
     description: Revenue reporting and breakdowns
+  - name: Health
+    description: Service health monitoring
 
 paths:
   /analytics/restaurants/{restaurantId}/summary:

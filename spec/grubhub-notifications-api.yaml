@@ -10,8 +10,12 @@ info:
     email: api-platform@grubhub.com
 
 servers:
+  - url: https://api.grubhub.com/notifications/v1
+    description: Production
+  - url: https://staging-api.grubhub.com/notifications/v1
+    description: Staging
   - url: http://localhost:3002/api/v1
-    description: Local development server
+    description: Local development
 
 security:
   - ApiKeyAuth: []
@@ -23,6 +27,8 @@ tags:
     description: User notification preferences
   - name: Templates
     description: Notification template management
+  - name: Health
+    description: Service health monitoring
 
 paths:
   /notifications:
