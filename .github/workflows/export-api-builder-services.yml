@@ -87,7 +87,6 @@ jobs:
         env:
           SERVICE_CONFIG_PATH: ${{ inputs.config_path }}
           SERVICE_NAME: ${{ matrix.service.name }}
-          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
           POSTMAN_ACCESS_TOKEN: ${{ secrets.POSTMAN_ACCESS_TOKEN }}
 
       - name: Show scaffold contents
