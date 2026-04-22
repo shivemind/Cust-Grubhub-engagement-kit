@@ -1,6 +1,6 @@
 {
   "github": {
-    "owner": "shivemind",
+    "owner": "danielshively-source",
     "visibility": "public",
     "repo_prefix": "",
     "default_branch": "main"
@@ -18,7 +18,7 @@
       "project_name": "GrubHub Partner Restaurant API",
       "repo_name": "grubhub-partner-restaurant-api",
       "repo_description": "Partner Restaurant API exported from Postman Spec Hub",
-      "target_workspace_id": "b498c773-f575-4e4f-995f-cdd10990188e",
+      "target_workspace_id": "",
       "source": {
         "spec_id": "d184d75b-2eab-4b6d-97f4-c80ffc268105",
         "spec_file_path": "grubhub-partner-api.yaml"
