@@ -192,27 +192,23 @@ async function main() {
   const spec = yaml.load(specContent);
   const specJson = JSON.parse(fs.readFileSync('spec/grubhub-partner-api.json', 'utf8'));
 
-  // Step 1: Spec Hub — create or update
+  // Step 1: Spec Hub — idempotent upsert (update file in place if exists, else create)
   console.log('\n1. Pushing spec to Spec Hub...');
   const existingSpecs = await api('GET', `/specs?workspaceId=${WORKSPACE_ID}`);
   let specId;
   const existingSpec = (existingSpecs.body.specs || []).find(s => s.name === SPEC_NAME);
+  const specFilePath = 'grubhub-partner-api.yaml';
   if (existingSpec) {
     specId = existingSpec.id;
-    console.log(`   Spec exists (${specId}), deleting and recreating for clean state...`);
-    await api('DELETE', `/specs/${specId}`);
-    const create = await api('POST', `/specs?workspaceId=${WORKSPACE_ID}`, {
-      name: SPEC_NAME,
-      type: 'OPENAPI:3.0',
-      files: [{ path: 'grubhub-partner-api.yaml', content: specContent }]
+    const update = await api('PUT', `/specs/${specId}/files/${encodeURIComponent(specFilePath)}`, {
+      content: specContent
     });
-    specId = create.body.id;
-    console.log(`   Recreated spec: ${specId} (status: ${create.status})`);
+    console.log(`   Updated spec in place: ${specId} (status: ${update.status})`);
   } else {
     const create = await api('POST', `/specs?workspaceId=${WORKSPACE_ID}`, {
       name: SPEC_NAME,
       type: 'OPENAPI:3.0',
-      files: [{ path: 'grubhub-partner-api.yaml', content: specContent }]
+      files: [{ path: specFilePath, content: specContent }]
     });
     specId = create.body.id;
     console.log(`   Created spec: ${specId} (status: ${create.status})`);
