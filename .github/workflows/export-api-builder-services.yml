@@ -75,8 +75,10 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           test -n "${POSTMAN_API_KEY}" || { echo "POSTMAN_API_KEY is required"; exit 1; }
-          test -n "${POSTMAN_ACCESS_TOKEN}" || { echo "POSTMAN_ACCESS_TOKEN is required for Bifrost/API Catalog onboarding"; exit 1; }
           test -n "${GH_REPO_ADMIN_TOKEN}" || { echo "GH_REPO_ADMIN_TOKEN is required"; exit 1; }
+          if [ -z "${POSTMAN_ACCESS_TOKEN:-}" ]; then
+            echo "POSTMAN_ACCESS_TOKEN is not set — Bifrost/API Catalog integration will be skipped in onboarded repos."
+          fi
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
           POSTMAN_ACCESS_TOKEN: ${{ secrets.POSTMAN_ACCESS_TOKEN }}
@@ -124,10 +126,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "$POSTMAN_API_KEY" | gh secret set POSTMAN_API_KEY --repo "$TARGET_REPO"
-          echo "$POSTMAN_ACCESS_TOKEN" | gh secret set POSTMAN_ACCESS_TOKEN --repo "$TARGET_REPO"
+          printf '%s' "$POSTMAN_API_KEY" | gh secret set POSTMAN_API_KEY --repo "$TARGET_REPO"
+          printf '%s' "$GH_REPO_ADMIN_TOKEN" | gh secret set GH_FALLBACK_TOKEN --repo "$TARGET_REPO"
 
-          echo "$GH_REPO_ADMIN_TOKEN" | gh secret set GH_FALLBACK_TOKEN --repo "$TARGET_REPO"
+          if [ -n "${POSTMAN_ACCESS_TOKEN:-}" ]; then
+            printf '%s' "$POSTMAN_ACCESS_TOKEN" | gh secret set POSTMAN_ACCESS_TOKEN --repo "$TARGET_REPO"
+          else
+            gh secret delete POSTMAN_ACCESS_TOKEN --repo "$TARGET_REPO" 2>/dev/null || true
+          fi
 
       - name: Push scaffold into target repo
         if: ${{ !inputs.dry_run }}

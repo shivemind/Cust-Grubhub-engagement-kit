@@ -8,16 +8,17 @@
   "postman": {
     "domain": "grubhub-platform",
     "domain_code": "GH",
-    "source_workspace_id": "b498c773-f575-4e4f-995f-cdd10990188e",
     "integration_backend": "bifrost",
-    "team_id": "14643263"
+    "team_id": "13569807",
+    "require_api_catalog_link": false,
+    "require_system_env_association": false
   },
   "services": [
     {
       "name": "partner-restaurant-api",
       "project_name": "GrubHub Partner Restaurant API",
       "repo_name": "grubhub-partner-restaurant-api",
-      "repo_description": "Partner Restaurant API exported from Postman Spec Hub",
+      "repo_description": "GrubHub Partner Restaurant API — onboarded to Postman via Git-native integration",
       "target_workspace_id": "",
       "source": {
         "local_path": "spec/grubhub-partner-api.yaml"
@@ -32,11 +33,10 @@
       "name": "payments-api",
       "project_name": "GrubHub Payments API",
       "repo_name": "grubhub-payments-api",
-      "repo_description": "Payments API exported from Postman Spec Hub",
-      "target_workspace_id": "b498c773-f575-4e4f-995f-cdd10990188e",
+      "repo_description": "GrubHub Payments API — onboarded to Postman via Git-native integration",
+      "target_workspace_id": "",
       "source": {
-        "spec_id": "1cc9d1e8-ad6e-4eb4-849a-5e32beb33078",
-        "spec_file_path": "grubhub-payments-api.yaml"
+        "local_path": "spec/grubhub-payments-api.yaml"
       },
       "environments": ["dev", "prod"],
       "runtime_urls": {
@@ -48,11 +48,10 @@
       "name": "notifications-api",
       "project_name": "GrubHub Notifications API",
       "repo_name": "grubhub-notifications-api",
-      "repo_description": "Notifications API exported from Postman Spec Hub",
-      "target_workspace_id": "b498c773-f575-4e4f-995f-cdd10990188e",
+      "repo_description": "GrubHub Notifications API — onboarded to Postman via Git-native integration",
+      "target_workspace_id": "",
       "source": {
-        "spec_id": "07d3a58d-0584-4258-9ae6-ececf96a93b6",
-        "spec_file_path": "grubhub-notifications-api.yaml"
+        "local_path": "spec/grubhub-notifications-api.yaml"
       },
       "environments": ["dev", "prod"],
       "runtime_urls": {
@@ -64,11 +63,10 @@
       "name": "analytics-api",
       "project_name": "GrubHub Analytics API",
       "repo_name": "grubhub-analytics-api",
-      "repo_description": "Analytics API exported from Postman Spec Hub",
-      "target_workspace_id": "b498c773-f575-4e4f-995f-cdd10990188e",
+      "repo_description": "GrubHub Analytics API — onboarded to Postman via Git-native integration",
+      "target_workspace_id": "",
       "source": {
-        "spec_id": "2136f415-817f-49bf-9610-9296073dd92e",
-        "spec_file_path": "grubhub-analytics-api.yaml"
+        "local_path": "spec/grubhub-analytics-api.yaml"
       },
       "environments": ["dev", "prod"],
       "runtime_urls": {
