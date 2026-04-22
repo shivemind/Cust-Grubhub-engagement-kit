@@ -108,9 +108,9 @@ jobs:
           fi
 
           case "$TARGET_VISIBILITY" in
-            public) gh repo create "$TARGET_REPO" --public --description "$TARGET_DESCRIPTION" --confirm ;;
-            internal) gh repo create "$TARGET_REPO" --internal --description "$TARGET_DESCRIPTION" --confirm ;;
-            *) gh repo create "$TARGET_REPO" --private --description "$TARGET_DESCRIPTION" --confirm ;;
+            public) gh repo create "$TARGET_REPO" --public --description "$TARGET_DESCRIPTION" ;;
+            internal) gh repo create "$TARGET_REPO" --internal --description "$TARGET_DESCRIPTION" ;;
+            *) gh repo create "$TARGET_REPO" --private --description "$TARGET_DESCRIPTION" ;;
           esac
 
       - name: Seed target repo secrets
